@@ -1,0 +1,72 @@
+<?php
+
+    // connect to mysql
+    $link = mysql_connect( 'localhost', 'root', 'esiney' );
+
+    // select the database
+    mysql_select_db('test', $link);
+
+
+    // create an array to hold the references
+    $refs = array();
+
+    // create and array to hold the list
+    $list = array();
+
+    // the query to fetch the menu data
+    $sql = "SELECT menu_item_id, menu_parent_id, menu_item_name FROM menu_items ORDER BY menu_item_name";
+
+    // get the results of the query
+    $result = mysql_query($sql);
+
+    // loop over the results
+    while($data = @mysql_fetch_assoc($result))
+    {
+        // Assign by reference
+        $thisref = &$refs[ $data['menu_item_id'] ];
+
+        // add the the menu parent
+        $thisref['menu_parent_id'] = $data['menu_parent_id'];
+        $thisref['menu_item_name'] = $data['menu_item_name'];
+
+        // if there is no parent id
+        if ($data['menu_parent_id'] == 0)
+        {
+            $list[ $data['menu_item_id'] ] = &$thisref;
+        }
+        else
+        {
+            $refs[ $data['menu_parent_id'] ]['children'][ $data['menu_item_id'] ] = &$thisref;
+        }
+    }
+
+    /**
+    *
+    * Create a HTML list from an array
+    *
+    * @param    array    $arr
+    * @param    string    $list_type
+    * @return    string
+    *
+    */
+    function create_list( $arr )
+    {
+        $html = "\n<ul>\n";
+        foreach ($arr as $key=>$v) 
+        {
+            $html .= '<li>'.$v['menu_item_name']."</li>\n";
+            if (array_key_exists('children', $v))
+            {
+                $html .= "<li>";
+                $html .= create_list($v['children']);
+                $html .= "</li>\n";
+            }
+            else{}
+        }
+        $html .= "</ul>\n";
+        return $html;
+    }
+
+    echo create_list( $list );
+
+?>
